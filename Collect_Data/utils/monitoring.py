@@ -213,7 +213,7 @@ def track_execution_time(service_name, operation_name=None):
                     service=service_name
                 ).set(time.time())
                 
-                logger.debug(f"✅ [{service_name}] {op_name} completed in {duration:.3f}s")
+                logger.debug(f" [{service_name}] {op_name} completed in {duration:.3f}s")
                 return result
                 
             except Exception as e:
@@ -225,7 +225,7 @@ def track_execution_time(service_name, operation_name=None):
                     error_type=type(e).__name__
                 ).inc()
                 
-                logger.error(f"❌ [{service_name}] {op_name} failed after {duration:.3f}s: {e}")
+                logger.error(f" [{service_name}] {op_name} failed after {duration:.3f}s: {e}")
                 raise
                 
         return wrapper
@@ -259,7 +259,7 @@ class ServiceHealthTracker:
     def __init__(self, service_name):
         self.service_name = service_name
         service_health_status.labels(service=service_name).set(1)
-        logger.info(f"✅ Health tracker initialisé pour '{service_name}'")
+        logger.info(f" Health tracker initialisé pour '{service_name}'")
     
     def mark_healthy(self):
         """Marquer le service comme sain"""
@@ -269,7 +269,7 @@ class ServiceHealthTracker:
     def mark_unhealthy(self):
         """Marquer le service comme en panne"""
         service_health_status.labels(service=self.service_name).set(0)
-        logger.warning(f"⚠️  Service '{self.service_name}' marqué comme unhealthy")
+        logger.warning(f" Service '{self.service_name}' marqué comme unhealthy")
     
     def record_error(self, error_type):
         """Enregistrer une erreur"""
@@ -277,7 +277,7 @@ class ServiceHealthTracker:
             service=self.service_name,
             error_type=error_type
         ).inc()
-        logger.error(f"❌ [{self.service_name}] Erreur enregistrée: {error_type}")
+        logger.error(f"[{self.service_name}] Erreur enregistrée: {error_type}")
 
 
 class APICallTracker:
@@ -315,7 +315,7 @@ class APICallTracker:
             endpoint=self.endpoint
         ).observe(duration)
         
-        logger.debug(f"📡 API {self.api_name}{self.endpoint} → {self.status_code} ({duration:.3f}s)")
+        logger.debug(f" API {self.api_name}{self.endpoint} → {self.status_code} ({duration:.3f}s)")
         
         return False  # Ne pas supprimer l'exception
 
@@ -332,18 +332,18 @@ def start_metrics_server(port=8000, service_name=None):
     """
     try:
         start_http_server(port, addr="0.0.0.0")
-        logger.info(f"✅ Serveur de métriques Prometheus démarré sur le port {port}")
-        logger.info(f"📊 Métriques disponibles sur http://0.0.0.0:{port}/metrics")
+        logger.info(f" Serveur de métriques Prometheus démarré sur le port {port}")
+        logger.info(f" Métriques disponibles sur http://0.0.0.0:{port}/metrics")
         
         if service_name:
             service_health_status.labels(service=service_name).set(1)
-            logger.info(f"✅ Service '{service_name}' marqué comme actif")
+            logger.info(f" Service '{service_name}' marqué comme actif")
             
     except OSError as e:
         if "Address already in use" in str(e):
-            logger.warning(f"⚠️  Port {port} déjà utilisé, le serveur de métriques est peut-être déjà démarré")
+            logger.warning(f"  Port {port} déjà utilisé, le serveur de métriques est peut-être déjà démarré")
         else:
-            logger.error(f"❌ Impossible de démarrer le serveur de métriques: {e}")
+            logger.error(f" Impossible de démarrer le serveur de métriques: {e}")
 
 
 def record_crypto_price(symbol, price, source='unknown', volume_24h=None):
@@ -361,7 +361,7 @@ def record_crypto_price(symbol, price, source='unknown', volume_24h=None):
     if volume_24h is not None:
         crypto_volume_24h.labels(symbol=symbol, source=source).set(volume_24h)
     
-    logger.debug(f"💹 Prix mis à jour: {symbol} = ${price:.2f} ({source})")
+    logger.debug(f" Prix mis à jour: {symbol} = ${price:.2f} ({source})")
 
 
 def get_memory_usage():
@@ -383,7 +383,7 @@ def update_process_metrics(service_name):
     memory_bytes = get_memory_usage()
     if memory_bytes > 0:
         process_memory_bytes.labels(service=service_name).set(memory_bytes)
-        logger.debug(f"💾 Mémoire {service_name}: {memory_bytes/1024/1024:.1f} MB")
+        logger.debug(f" Mémoire {service_name}: {memory_bytes/1024/1024:.1f} MB")
 
 
 # ==================== EXPORT ====================
@@ -437,7 +437,7 @@ if __name__ == '__main__':
     Exemple d'utilisation du module
     """
     print("="*60)
-    print("🧪 TEST DU MODULE MONITORING")
+    print(" TEST DU MODULE MONITORING")
     print("="*60)
     
     # Démarrer le serveur de métriques
@@ -454,7 +454,7 @@ if __name__ == '__main__':
     
     # Exécuter plusieurs fois
     for i in range(5):
-        print(f"\n🔄 Test #{i+1}")
+        print(f"\n Test #{i+1}")
         
         # Appeler la fonction
         result = test_function()
@@ -476,8 +476,8 @@ if __name__ == '__main__':
     
     # Afficher le lien vers les métriques
     print(f"\n{'='*60}")
-    print("✅ Test terminé !")
-    print(f"📊 Métriques disponibles: http://localhost:8000/metrics")
+    print("Test terminé !")
+    print(f" Métriques disponibles: http://localhost:8000/metrics")
     print(f"{'='*60}")
     print("\nAppuyez sur Ctrl+C pour arrêter...")
     
@@ -486,4 +486,4 @@ if __name__ == '__main__':
             update_process_metrics('test_service')
             time.sleep(10)
     except KeyboardInterrupt:
-        print("\n👋 Arrêt du test")
+        print("\n Arrêt du test")

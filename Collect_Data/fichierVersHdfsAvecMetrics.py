@@ -53,22 +53,22 @@ def wait_for_hdfs(max_retries=20, delay=3):
     """
     Attend que le NameNode soit prêt à répondre avant de poursuivre.
     """
-    print(f"🔍 Tentative de connexion à HDFS: {HDFS_URL}")
+    print(f" Tentative de connexion à HDFS: {HDFS_URL}")
     
     for i in range(max_retries):
         try:
             client = InsecureClient(HDFS_URL, user=HDFS_USER)
             client.status("/", strict=False)
-            print("✅ HDFS prêt.")
+            print("HDFS prêt.")
             health_tracker.mark_healthy()
             return client
         except Exception as e:
-            print(f"⏳ Tentative {i+1}/{max_retries} : HDFS non disponible ({e})")
+            print(f" Tentative {i+1}/{max_retries} : HDFS non disponible ({e})")
             health_tracker.record_error('HDFSConnectionError')
             time.sleep(delay)
     
     health_tracker.mark_unhealthy()
-    raise ConnectionError("❌ Le NameNode ne répond pas après plusieurs tentatives.")
+    raise ConnectionError(" Le NameNode ne répond pas après plusieurs tentatives.")
 
 
 @track_execution_time('csv_hdfs', 'upload_single_file')
@@ -82,7 +82,7 @@ def upload_file_to_hdfs(client, csv_file, hdfs_destination):
         file_name = os.path.basename(csv_file)
         hdfs_path = f"{hdfs_destination}/{file_name}"
         
-        print(f"📤 Upload de {file_name}...", end=" ")
+        print(f" Upload de {file_name}...", end=" ")
         
         # Lire le CSV
         start_read = time.time()
@@ -117,14 +117,14 @@ def upload_file_to_hdfs(client, csv_file, hdfs_destination):
         total_files_uploaded += 1
         total_bytes_uploaded += data_size
         
-        print(f"✅ ({data_size/1024:.1f} KB, {len(df)} lignes, "
+        print(f" ({data_size/1024:.1f} KB, {len(df)} lignes, "
               f"read: {read_duration:.2f}s, write: {write_duration:.2f}s)")
         
         health_tracker.mark_healthy()
         return True
         
     except Exception as e:
-        print(f"❌ Erreur : {e}")
+        print(f" Erreur : {e}")
         hdfs_files_written_total.labels(
             path=hdfs_destination,
             status='error'
@@ -142,12 +142,12 @@ def upload_csv_to_hdfs():
     global total_files_found
     
     print("="*60)
-    print("📂 UPLOAD CSV → HDFS AVEC MONITORING")
+    print(" UPLOAD CSV → HDFS AVEC MONITORING")
     print("="*60)
-    print(f"📁 Chemin local: {LOCAL_CSV_PATH}")
-    print(f"💾 HDFS: {HDFS_URL}")
-    print(f"📊 Destination: {HDFS_DESTINATION}")
-    print(f"📈 Métriques: http://0.0.0.0:8000/metrics")
+    print(f" Chemin local: {LOCAL_CSV_PATH}")
+    print(f" HDFS: {HDFS_URL}")
+    print(f" Destination: {HDFS_DESTINATION}")
+    print(f" Métriques: http://0.0.0.0:8000/metrics")
     print("="*60 + "\n")
     
     # Connexion HDFS
@@ -158,10 +158,10 @@ def upload_csv_to_hdfs():
     total_files_found = len(csv_files)
     
     if not csv_files:
-        print(f"⚠️ Aucun fichier CSV trouvé dans {LOCAL_CSV_PATH}")
+        print(f" Aucun fichier CSV trouvé dans {LOCAL_CSV_PATH}")
         
         # Debug : afficher le contenu du dossier
-        print(f"\n🔍 Debug - Contenu du répertoire actuel :")
+        print(f"\n Debug - Contenu du répertoire actuel :")
         try:
             print(f"   Répertoire: {os.getcwd()}")
             print(f"   Fichiers: {os.listdir('.')}")
@@ -169,7 +169,7 @@ def upload_csv_to_hdfs():
             pass
         
         if os.path.exists("./Fichiers/"):
-            print(f"\n📁 Contenu de ./Fichiers/ :")
+            print(f"\n Contenu de ./Fichiers/ :")
             try:
                 files = os.listdir('./Fichiers/')
                 for f in files:
@@ -177,22 +177,22 @@ def upload_csv_to_hdfs():
             except:
                 pass
         else:
-            print("❌ Le dossier ./Fichiers/ n'existe pas !")
+            print(" Le dossier ./Fichiers/ n'existe pas !")
         
         health_tracker.record_error('NoFilesFound')
         return
     
-    print(f"📂 {len(csv_files)} fichiers CSV trouvés")
+    print(f" {len(csv_files)} fichiers CSV trouvés")
     
     # Créer le dossier HDFS
     try:
-        print(f"📁 Création du dossier HDFS: {HDFS_DESTINATION}")
+        print(f" Création du dossier HDFS: {HDFS_DESTINATION}")
         client.makedirs(HDFS_DESTINATION)
-        print(f"✅ Dossier HDFS créé")
+        print(f" Dossier HDFS créé")
     except Exception as e:
-        print(f"ℹ️  Dossier HDFS déjà existant ou erreur : {e}")
+        print(f"  Dossier HDFS déjà existant ou erreur : {e}")
     
-    print(f"\n🚀 Démarrage de l'upload...\n")
+    print(f"\n Démarrage de l'upload...\n")
     
     # Upload des fichiers
     start_time = time.time()
@@ -209,7 +209,7 @@ def upload_csv_to_hdfs():
     
     # Résumé final
     print(f"\n{'='*60}")
-    print("📊 RÉSUMÉ DE L'UPLOAD")
+    print(" RÉSUMÉ DE L'UPLOAD")
     print(f"{'='*60}")
     print(f"   Fichiers trouvés: {total_files_found}")
     print(f"   Fichiers uploadés: {total_files_uploaded}")
@@ -222,9 +222,9 @@ def upload_csv_to_hdfs():
     print(f"{'='*60}")
     
     if total_files_uploaded == total_files_found:
-        print("✅ Tous les fichiers ont été transférés avec succès !")
+        print(" Tous les fichiers ont été transférés avec succès !")
     else:
-        print(f"⚠️  {total_errors} fichier(s) ont échoué")
+        print(f"  {total_errors} fichier(s) ont échoué")
 
 
 def main():
@@ -239,19 +239,19 @@ def main():
         
         # Garder le serveur de métriques actif pendant 60s
         # pour permettre à Prometheus de scraper
-        print("\n⏳ Métriques disponibles pendant 60 secondes...")
+        print("\n Métriques disponibles pendant 60 secondes...")
         print("   URL: http://0.0.0.0:8000/metrics")
         time.sleep(60)
         
     except KeyboardInterrupt:
-        print("\n🛑 Arrêt demandé par l'utilisateur")
+        print("\n Arrêt demandé par l'utilisateur")
     except Exception as e:
-        print(f"\n❌ Erreur fatale: {e}")
+        print(f"\n Erreur fatale: {e}")
         import traceback
         traceback.print_exc()
         health_tracker.record_error('FatalError')
     finally:
-        print("\n✅ Programme terminé")
+        print("\n Programme terminé")
 
 
 # ===========================

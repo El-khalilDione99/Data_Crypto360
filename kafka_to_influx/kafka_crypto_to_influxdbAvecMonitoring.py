@@ -39,12 +39,12 @@ KAFKA_TOPIC_COINGECKO = "coingecko-data"
 health_tracker = ServiceHealthTracker('kafka_influxdb')
 
 print("="*60)
-print("🚀 KAFKA → INFLUXDB AVEC MONITORING")
+print(" KAFKA → INFLUXDB AVEC MONITORING")
 print("="*60)
-print(f"📡 Kafka: {KAFKA_BROKER}")
-print(f"💾 InfluxDB: {INFLUX_URL}")
-print(f"📊 Bucket: {INFLUX_BUCKET}")
-print(f"📈 Métriques: http://0.0.0.0:8000/metrics")
+print(f" Kafka: {KAFKA_BROKER}")
+print(f" InfluxDB: {INFLUX_URL}")
+print(f" Bucket: {INFLUX_BUCKET}")
+print(f" Métriques: http://0.0.0.0:8000/metrics")
 print("="*60 + "\n")
 
 # Démarrer le serveur de métriques Prometheus
@@ -61,14 +61,14 @@ def init_influxdb():
         # Test de connexion
         health = client.health()
         if health.status == "pass":
-            print("✅ InfluxDB connecté et opérationnel")
+            print(" InfluxDB connecté et opérationnel")
             health_tracker.mark_healthy()
         else:
-            print(f"⚠️  InfluxDB santé: {health.status}")
+            print(f" InfluxDB santé: {health.status}")
         
         return client, write_api
     except Exception as e:
-        print(f"❌ Erreur connexion InfluxDB: {e}")
+        print(f" Erreur connexion InfluxDB: {e}")
         health_tracker.record_error('InfluxDBConnectionError')
         raise
 
@@ -88,11 +88,11 @@ def init_kafka():
             auto_offset_reset='latest',
             enable_auto_commit=True
         )
-        print(f"✅ En écoute des topics : {KAFKA_TOPIC_BINANCE}, {KAFKA_TOPIC_COINGECKO}\n")
+        print(f" En écoute des topics : {KAFKA_TOPIC_BINANCE}, {KAFKA_TOPIC_COINGECKO}\n")
         health_tracker.mark_healthy()
         return consumer
     except Exception as e:
-        print(f"❌ Erreur connexion Kafka: {e}")
+        print(f" Erreur connexion Kafka: {e}")
         health_tracker.record_error('KafkaConnectionError')
         raise
 
@@ -155,7 +155,7 @@ def process_binance_message(data):
         
         # Log toutes les 10 écritures
         if count_binance % 10 == 0:
-            print(f"📊 Binance: {count_binance} points écrits | "
+            print(f" Binance: {count_binance} points écrits | "
                   f"Dernier: {data['symbol']} = ${data['close']:.2f} | "
                   f"Latence: {write_duration*1000:.1f}ms")
         
@@ -163,7 +163,7 @@ def process_binance_message(data):
         return True
         
     except Exception as e:
-        print(f"❌ Erreur traitement Binance: {e}")
+        print(f"Erreur traitement Binance: {e}")
         influxdb_points_written_total.labels(
             measurement='binance_prices',
             status='error'
@@ -223,7 +223,7 @@ def process_coingecko_message(data):
         
         # Log toutes les 5 écritures
         if count_coingecko % 5 == 0:
-            print(f"🪙 CoinGecko: {count_coingecko} points écrits | "
+            print(f" CoinGecko: {count_coingecko} points écrits | "
                   f"Dernier: {data['name']} = ${data['current_price_usd']:.2f} | "
                   f"Latence: {write_duration*1000:.1f}ms")
         
@@ -231,7 +231,7 @@ def process_coingecko_message(data):
         return True
         
     except Exception as e:
-        print(f"❌ Erreur traitement CoinGecko: {e}")
+        print(f" Erreur traitement CoinGecko: {e}")
         influxdb_points_written_total.labels(
             measurement='coingecko_prices',
             status='error'
@@ -260,7 +260,7 @@ def update_consumer_lag():
 
 
 try:
-    print("🔄 Consommation des messages Kafka en cours...\n")
+    print(" Consommation des messages Kafka en cours...\n")
     
     for message in consumer:
         try:
@@ -299,17 +299,17 @@ try:
             continue
 
 except KeyboardInterrupt:
-    print("\n🛑 Arrêt du consumer...")
+    print("\n Arrêt du consumer...")
 finally:
     consumer.close()
     client.close()
     
     print(f"\n{'='*60}")
-    print("📊 STATISTIQUES FINALES")
+    print(" STATISTIQUES FINALES")
     print(f"{'='*60}")
     print(f"   Binance points: {count_binance}")
     print(f"   CoinGecko points: {count_coingecko}")
     print(f"   Total: {count_binance + count_coingecko}")
     print(f"   Erreurs: {count_errors}")
     print(f"{'='*60}")
-    print("✅ Consumer arrêté proprement")
+    print(" Consumer arrêté proprement")

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Configuration du système de monitoring DataFlow360..."
+echo " Configuration du système de monitoring DataFlow360..."
 
 # Couleurs
 GREEN='\033[0;32m'
@@ -9,16 +9,16 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Créer la structure de répertoires
-echo -e "${YELLOW}📁 Création de la structure de répertoires...${NC}"
+echo -e "${YELLOW} Création de la structure de répertoires...${NC}"
 mkdir -p monitoring/{grafana/{data,provisioning/{datasources,dashboards},dashboards},loki,promtail,prometheus/{data}}
 
 # Donner les permissions
 chmod -R 777 monitoring/
 
-echo -e "${GREEN}✅ Structure créée${NC}"
+echo -e "${GREEN} Structure créée${NC}"
 
 # Créer les fichiers de configuration
-echo -e "${YELLOW}📝 Création des fichiers de configuration...${NC}"
+echo -e "${YELLOW} Création des fichiers de configuration...${NC}"
 
 # Loki config
 cat > monitoring/loki/config.yml << 'EOF'
@@ -129,33 +129,33 @@ providers:
       path: /var/lib/grafana/dashboards
 EOF
 
-echo -e "${GREEN}✅ Fichiers de configuration créés${NC}"
+echo -e "${GREEN} Fichiers de configuration créés${NC}"
 
 # Ajouter prometheus_client aux requirements si absent
 if ! grep -q "prometheus_client" requirements.txt 2>/dev/null; then
-    echo -e "${YELLOW}📦 Ajout de prometheus_client aux dépendances...${NC}"
+    echo -e "${YELLOW} Ajout de prometheus_client aux dépendances...${NC}"
     echo "prometheus_client==0.19.0" >> requirements.txt
 fi
 
 # Démarrer la stack de monitoring
-echo -e "${YELLOW}🚀 Démarrage de la stack de monitoring...${NC}"
+echo -e "${YELLOW} Démarrage de la stack de monitoring...${NC}"
 docker compose -f docker-compose-monitoring.yml up -d
 
 # Attendre que les services soient prêts
-echo -e "${YELLOW}⏳ Attente du démarrage des services...${NC}"
+echo -e "${YELLOW} Attente du démarrage des services...${NC}"
 sleep 20
 
 # Vérifier l'état
-echo -e "\n${GREEN}📊 État des services de monitoring:${NC}"
+echo -e "\n${GREEN} État des services de monitoring:${NC}"
 docker compose -f docker-compose-monitoring.yml ps
 
-echo -e "\n${GREEN}✅ Setup terminé!${NC}"
-echo -e "\n${YELLOW}🎯 Accès aux interfaces:${NC}"
+echo -e "\n${GREEN} Setup terminé!${NC}"
+echo -e "\n${YELLOW} Accès aux interfaces:${NC}"
 echo -e "  • Grafana:    http://localhost:3000 (admin/admin123)"
 echo -e "  • Prometheus: http://localhost:9090"
 echo -e "  • Loki:       http://localhost:3100"
 echo -e "  • cAdvisor:   http://localhost:8080"
-echo -e "\n${YELLOW}📝 Prochaines étapes:${NC}"
+echo -e "\n${YELLOW} Prochaines étapes:${NC}"
 echo -e "  1. Connectez-vous à Grafana"
 echo -e "  2. Importez le dashboard depuis monitoring/grafana/dashboards/"
 echo -e "  3. Ajoutez les métriques à vos scripts Python"

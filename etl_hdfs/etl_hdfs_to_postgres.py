@@ -171,7 +171,7 @@ for file in files:
         print(f"   Erreur: {e}")
         continue
 
-print("\n🎉 ETL TERMINÉ – Données chargées dans le DataWarehouse !")
+print("\n ETL TERMINÉ – Données chargées dans le DataWarehouse !")
 
 cur.close()
 conn.close()

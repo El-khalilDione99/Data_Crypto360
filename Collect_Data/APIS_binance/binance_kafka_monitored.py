@@ -66,16 +66,16 @@ def wait_for_kafka(max_retries=20, delay=3):
                 acks='all',
                 retries=3
             )
-            print("✅ Kafka prêt.")
+            print(" Kafka prêt.")
             health_tracker.mark_healthy()
             return prod
         except Exception as e:
-            print(f"⏳ Tentative {i+1}/{max_retries} : Kafka non disponible ({e})")
+            print(f"Tentative {i+1}/{max_retries} : Kafka non disponible ({e})")
             health_tracker.record_error('KafkaConnectionError')
             time.sleep(delay)
     
     health_tracker.mark_unhealthy()
-    raise ConnectionError("❌ Kafka ne répond pas.")
+    raise ConnectionError(" Kafka ne répond pas.")
 
 
 def on_message(ws, message):
@@ -132,7 +132,7 @@ def on_message(ws, message):
         
         # Afficher prix en temps réel (seulement pour certaines cryptos)
         if not k["x"] and symbol in ["BTCUSDT", "ETHUSDT", "BNBUSDT"]:
-            print(f"💹 {symbol:10} → ${close_price:10,.2f} | "
+            print(f" {symbol:10} → ${close_price:10,.2f} | "
                   f"Latence: {latency*1000:.0f}ms | Total: {message_count}")
         
         # Envoyer vers Kafka
@@ -148,7 +148,7 @@ def on_message(ws, message):
                 
                 if k["x"]:  # Bougie fermée
                     candle_count += 1
-                    print(f"📊 Bougie fermée: {symbol} envoyée à Kafka (#{candle_count})")
+                    print(f" Bougie fermée: {symbol} envoyée à Kafka (#{candle_count})")
                 
                 # Enregistrer le temps de traitement
                 processing_time = time.time() - start_time
@@ -160,7 +160,7 @@ def on_message(ws, message):
                 health_tracker.mark_healthy()
                 
             except Exception as e:
-                print(f"❌ Erreur envoi Kafka: {e}")
+                print(f" Erreur envoi Kafka: {e}")
                 kafka_messages_sent_total.labels(
                     topic=KAFKA_TOPIC,
                     status='error'
@@ -168,10 +168,10 @@ def on_message(ws, message):
                 health_tracker.record_error('KafkaSendError')
                 
     except json.JSONDecodeError as e:
-        print(f"❌ Erreur JSON: {e}")
+        print(f" Erreur JSON: {e}")
         health_tracker.record_error('JSONDecodeError')
     except Exception as e:
-        print(f"❌ Erreur traitement message: {e}")
+        print(f" Erreur traitement message: {e}")
         health_tracker.record_error('MessageProcessingError')
 
 
@@ -179,13 +179,13 @@ def on_error(ws, error):
     """Gère les erreurs WebSocket"""
     global error_count
     error_count += 1
-    print(f"❌ Erreur WebSocket #{error_count}: {error}")
+    print(f" Erreur WebSocket #{error_count}: {error}")
     health_tracker.record_error('WebSocketError')
 
 
 def on_close(ws, close_status_code, close_msg):
     """Gère la fermeture de la connexion"""
-    print(f"🔌 Connexion fermée: {close_msg} (code: {close_status_code})")
+    print(f" Connexion fermée: {close_msg} (code: {close_status_code})")
     websocket_connections_active.labels(exchange='binance').dec()
     
     if not stop_event.is_set():
@@ -197,8 +197,8 @@ def on_close(ws, close_status_code, close_msg):
 
 def on_open(ws):
     """Gère l'ouverture de la connexion"""
-    print(f"✅ WebSocket ouvert - {len(symbols)} cryptos surveillées")
-    print(f"📡 Envoi vers Kafka topic: {KAFKA_TOPIC}\n")
+    print(f" WebSocket ouvert - {len(symbols)} cryptos surveillées")
+    print(f" Envoi vers Kafka topic: {KAFKA_TOPIC}\n")
     
     websocket_connections_active.labels(exchange='binance').inc()
     health_tracker.mark_healthy()
@@ -206,19 +206,19 @@ def on_open(ws):
 
 def signal_handler(sig, frame):
     """Gère l'arrêt propre"""
-    print("\n🛑 Arrêt en cours...")
+    print("\n Arrêt en cours...")
     stop_event.set()
     
     if ws_app:
         ws_app.close()
     
     if producer:
-        print("💾 Flush des messages Kafka...")
+        print(" Flush des messages Kafka...")
         producer.flush()
         producer.close()
     
     # Statistiques finales
-    print(f"\n📊 Statistiques finales:")
+    print(f"\n Statistiques finales:")
     print(f"   Messages reçus: {message_count}")
     print(f"   Bougies fermées: {candle_count}")
     print(f"   Erreurs: {error_count}")
@@ -241,12 +241,12 @@ def main():
     global ws_app, producer
     
     print("="*60)
-    print("🚀 BINANCE WEBSOCKET → KAFKA AVEC MONITORING")
+    print(" BINANCE WEBSOCKET → KAFKA AVEC MONITORING")
     print("="*60)
-    print(f"📡 WebSocket: {socket_url}")
-    print(f"📨 Kafka: {KAFKA_BOOTSTRAP_SERVERS}")
-    print(f"📊 Topic: {KAFKA_TOPIC}")
-    print(f"💰 Cryptos: {len(symbols)}")
+    print(f" WebSocket: {socket_url}")
+    print(f" Kafka: {KAFKA_BOOTSTRAP_SERVERS}")
+    print(f" Topic: {KAFKA_TOPIC}")
+    print(f" Cryptos: {len(symbols)}")
     print("="*60 + "\n")
     
     # Démarrer le serveur de métriques
@@ -259,7 +259,7 @@ def main():
     try:
         producer = wait_for_kafka()
     except Exception as e:
-        print(f"❌ Erreur Kafka : {e}")
+        print(f" Erreur Kafka : {e}")
         return False
     
     # Configurer les signaux
@@ -270,7 +270,7 @@ def main():
     reconnect_count = 0
     while not stop_event.is_set():
         try:
-            print(f"🔄 Connexion WebSocket (tentative #{reconnect_count + 1})...")
+            print(f" Connexion WebSocket (tentative #{reconnect_count + 1})...")
             
             ws_app = websocket.WebSocketApp(
                 socket_url,
@@ -290,15 +290,15 @@ def main():
                 break
             
             reconnect_count += 1
-            print(f"❌ Erreur WebSocket: {e}")
+            print(f" Erreur WebSocket: {e}")
             health_tracker.record_error('WebSocketConnectionError')
         
         if not stop_event.is_set():
             reconnect_delay = min(5 * reconnect_count, 30)  # Max 30s
-            print(f"⏳ Reconnexion dans {reconnect_delay}s...")
+            print(f" Reconnexion dans {reconnect_delay}s...")
             time.sleep(reconnect_delay)
     
-    print("✅ Arrêt propre du service Binance → Kafka")
+    print(" Arrêt propre du service Binance → Kafka")
     return True
 
 

@@ -14,10 +14,10 @@ KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:29092")
 KAFKA_TOPIC_BINANCE = "binance-realtime"
 KAFKA_TOPIC_COINGECKO = "coingecko-data"
 
-print("🚀 Kafka → InfluxDB consumer démarré...")
-print(f"📡 Kafka: {KAFKA_BROKER}")
-print(f"💾 InfluxDB: {INFLUX_URL}")
-print(f"📊 Bucket: {INFLUX_BUCKET}")
+print(" Kafka → InfluxDB consumer démarré...")
+print(f" Kafka: {KAFKA_BROKER}")
+print(f" InfluxDB: {INFLUX_URL}")
+print(f" Bucket: {INFLUX_BUCKET}")
 
 # Connexion InfluxDB
 client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
@@ -34,7 +34,7 @@ consumer = KafkaConsumer(
     enable_auto_commit=True
 )
 
-print(f"✅ En écoute des topics : {KAFKA_TOPIC_BINANCE}, {KAFKA_TOPIC_COINGECKO}\n")
+print(f" En écoute des topics : {KAFKA_TOPIC_BINANCE}, {KAFKA_TOPIC_COINGECKO}\n")
 
 # Compteurs pour monitoring
 count_binance = 0
@@ -70,7 +70,7 @@ try:
                 
                 count_binance += 1
                 if count_binance % 10 == 0:  # Log toutes les 10 écritures
-                    print(f"📊 Binance: {count_binance} points écrits | Dernier: {data['symbol']} = ${data['close']:.2f}")
+                    print(f" Binance: {count_binance} points écrits | Dernier: {data['symbol']} = ${data['close']:.2f}")
             
             # ===== TRAITEMENT COINGECKO =====
             elif topic == KAFKA_TOPIC_COINGECKO:
@@ -95,19 +95,19 @@ try:
                 
                 count_coingecko += 1
                 if count_coingecko % 5 == 0:
-                    print(f"🪙 CoinGecko: {count_coingecko} points écrits | Dernier: {data['name']} = ${data['current_price_usd']:.2f}")
+                    print(f" CoinGecko: {count_coingecko} points écrits | Dernier: {data['name']} = ${data['current_price_usd']:.2f}")
         
         except Exception as e:
-            print(f"❌ Erreur traitement message : {e}")
+            print(f" Erreur traitement message : {e}")
             print(f"   Message: {message.value}")
             continue
 
 except KeyboardInterrupt:
-    print("\n🛑 Arrêt du consumer...")
+    print("\n Arrêt du consumer...")
 finally:
     consumer.close()
     client.close()
-    print(f"\n📊 Stats finales:")
+    print(f"\n Stats finales:")
     print(f"   Binance: {count_binance} points")
     print(f"   CoinGecko: {count_coingecko} points")
-    print("✅ Consumer arrêté proprement")
+    print(" Consumer arrêté proprement")

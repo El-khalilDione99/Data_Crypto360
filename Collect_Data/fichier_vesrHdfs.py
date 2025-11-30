@@ -29,12 +29,12 @@ def wait_for_hdfs(max_retries=20, delay=3):
         try:
             client = InsecureClient(HDFS_URL, user=HDFS_USER)
             client.status("/", strict=False)
-            print("✅ HDFS prêt.")
+            print(" HDFS prêt.")
             return client
         except Exception as e:
-            print(f"⏳ Tentative {i+1}/{max_retries} : HDFS non disponible ({e})")
+            print(f" Tentative {i+1}/{max_retries} : HDFS non disponible ({e})")
             time.sleep(delay)
-    raise ConnectionError("❌ Le NameNode ne répond pas après plusieurs tentatives.")
+    raise ConnectionError(" Le NameNode ne répond pas après plusieurs tentatives.")
 
 
 def upload_csv_to_hdfs():
@@ -45,23 +45,23 @@ def upload_csv_to_hdfs():
 
     csv_files = glob.glob(LOCAL_CSV_PATH)
     if not csv_files:
-        print(f"⚠️ Aucun fichier CSV trouvé dans {LOCAL_CSV_PATH}")
+        print(f" Aucun fichier CSV trouvé dans {LOCAL_CSV_PATH}")
         # Debug : afficher le contenu du dossier
-        print(f"📁 Contenu du répertoire actuel : {os.listdir('.')}")
+        print(f" Contenu du répertoire actuel : {os.listdir('.')}")
         if os.path.exists("./Fichiers/"):
-            print(f"📁 Contenu de ./Fichiers/ : {os.listdir('./Fichiers/')}")
+            print(f" Contenu de ./Fichiers/ : {os.listdir('./Fichiers/')}")
         else:
-            print("❌ Le dossier ./Fichiers/ n'existe pas !")
+            print(" Le dossier ./Fichiers/ n'existe pas !")
         return
 
-    print(f"📂 {len(csv_files)} fichiers trouvés, création du dossier HDFS si nécessaire...")
+    print(f"{len(csv_files)} fichiers trouvés, création du dossier HDFS si nécessaire...")
 
     # Créer le dossier HDFS
     try:
         client.makedirs(HDFS_DESTINATION)
-        print(f"✅ Dossier HDFS créé : {HDFS_DESTINATION}")
+        print(f" Dossier HDFS créé : {HDFS_DESTINATION}")
     except Exception as e:
-        print(f"ℹ️ Dossier HDFS déjà existant ou erreur : {e}")
+        print(f"ℹ Dossier HDFS déjà existant ou erreur : {e}")
 
     # Upload des fichiers
     success_count = 0
@@ -70,7 +70,7 @@ def upload_csv_to_hdfs():
             file_name = os.path.basename(csv_file)
             hdfs_path = f"{HDFS_DESTINATION}/{file_name}"
 
-            print(f"📤 Upload de {file_name}...", end=" ")
+            print(f" Upload de {file_name}...", end=" ")
             df = pd.read_csv(csv_file)
 
             csv_buffer = StringIO()
@@ -78,13 +78,13 @@ def upload_csv_to_hdfs():
             client.write(hdfs_path, data=csv_buffer.getvalue(),
                          overwrite=True, encoding="utf-8")
 
-            print("✅")
+            print("")
             success_count += 1
 
         except Exception as e:
-            print(f"❌ Erreur : {e}")
+            print(f" Erreur : {e}")
 
-    print(f"\n🎯 {success_count}/{len(csv_files)} fichiers transférés vers HDFS avec succès !")
+    print(f"\n {success_count}/{len(csv_files)} fichiers transférés vers HDFS avec succès !")
 
 
 def main():

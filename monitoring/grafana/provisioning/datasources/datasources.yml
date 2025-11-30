@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+  # Prometheus pour les métriques
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: "POST"
+
+  # Loki pour les logs
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 1000
+
+  # InfluxDB (SANS UID fixe)
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    isDefault: false
+    editable: true
+    jsonData:
+      version: Flux
+      organization: my-org
+      defaultBucket: my-bucket
+      tlsSkipVerify: true
+    secureJsonData:
+      token: bxMLX3w1vd2DHFrYzWPJrrh5xIzer19ldqXNTtyIZreNFzAq1CMn8li3RWpy2sgWKIQQOg46uBVvwotr2rqNFw==

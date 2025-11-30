@@ -1,0 +1,424 @@
+services:
+  #------------------------------------------
+  # Service namenode
+  #------------------------------------------
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    container_name: namenode
+    volumes:
+      - namenode:/hadoop/dfs/name
+      - ./data/test:/data/test
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./docker/hadoop/hadoop-hive.env
+    ports:
+      - "50070:50070"
+    networks:
+      - projet360-net
+
+  #------------------------------------------
+  # Service datanode
+  #------------------------------------------
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    container_name: datanode
+    volumes:
+      - datanode:/hadoop/dfs/data
+    env_file:
+      - ./docker/hadoop/hadoop-hive.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    ports:
+      - "50075:50075"
+    networks:
+      - projet360-net
+    depends_on:
+      - namenode
+
+  #------------------------------------------
+  # Service resourcemanager
+  #------------------------------------------
+  resourcemanager:
+    image: apache/hadoop:3
+    hostname: resourcemanager
+    container_name: resourcemanager
+    command: ["yarn", "resourcemanager"]
+    ports:
+      - "8088:8088"
+    env_file:
+      - ./docker/hadoop/config
+    volumes:
+      - ./test.sh:/opt/test.sh
+    networks:
+      - projet360-net
+
+  #------------------------------------------
+  # Service nodemanager
+  #------------------------------------------
+  nodemanager:
+    image: apache/hadoop:3
+    container_name: nodemanager
+    command: ["yarn", "nodemanager"]
+    networks:
+      - projet360-net
+    depends_on:
+      - resourcemanager
+  
+  #------------------------------------------
+  # Service crypto_batch (CSV vers Hadoop HDFS)
+  #------------------------------------------
+  crypto_batch:
+    build:
+      context: ./Collect_Data
+      dockerfile: Dockerfile
+    image: crypto_batch_realtime
+    container_name: crypto_batch
+    environment:
+      - SERVICE_MODE=crypto_batch
+      - HDFS_URL=http://namenode:50070
+      - HDFS_USER=hadoop
+    volumes:
+      - ./Collect_Data/Fichiers:/app/Fichiers:ro
+    ports:
+      - "8004:8000"  # Métriques Prometheus
+    depends_on:
+      - namenode
+      - datanode
+    networks:
+      - projet360-net
+
+  #------------------------------------------
+  # Service Binance vers Kafka (avec monitoring)
+  #------------------------------------------
+  binance_kafka:
+    image: crypto_batch_realtime
+    container_name: binance_kafka
+    environment:
+      - SERVICE_MODE=binance_kafka
+      - KAFKA_BROKER=kafka:29092
+    volumes:
+      - ./Collect_Data/APIS_binance:/app/Fichiers:ro
+    ports:
+      - "8001:8000"  # Métriques Prometheus
+    depends_on:
+      - kafka
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Service CoinGecko vers Kafka (avec monitoring)
+  #------------------------------------------
+  coingo_kafka:
+    image: crypto_batch_realtime
+    container_name: coingo_kafka
+    environment:
+      - SERVICE_MODE=coingo_kafka
+      - KAFKA_BROKER=kafka:29092
+    volumes:
+      - ./Collect_Data/APIS_coingo:/app/Fichiers:ro
+    ports:
+      - "8002:8000"  # Métriques Prometheus
+    depends_on:
+      - kafka
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Service Zookeeper
+  #------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - projet360-net
+
+  #------------------------------------------
+  # Service Kafka Broker
+  #------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - projet360-net
+    
+  #------------------------------------------
+  # Interface UI pour Kafka
+  #------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui
+    depends_on:
+      - kafka
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181  
+      DYNAMIC_CONFIG_ENABLED: "true"
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # InfluxDB
+  #------------------------------------------
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=bxMLX3w1vd2DHFrYzWPJrrh5xIzer19ldqXNTtyIZreNFzAq1CMn8li3RWpy2sgWKIQQOg46uBVvwotr2rqNFw==
+      - DOCKER_INFLUXDB_INIT_RETENTION=1h
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Kafka → InfluxDB Consumer (avec monitoring)
+  #------------------------------------------
+  kafka_to_influx:
+    build: ./kafka_to_influx
+    container_name: kafka_to_influx
+    ports:
+      - "8003:8000"  # Métriques Prometheus
+    depends_on:
+      - kafka
+      - influxdb
+    environment:
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=bxMLX3w1vd2DHFrYzWPJrrh5xIzer19ldqXNTtyIZreNFzAq1CMn8li3RWpy2sgWKIQQOg46uBVvwotr2rqNFw==
+      - INFLUX_ORG=my-org
+      - INFLUX_BUCKET=my-bucket
+      - KAFKA_BROKER=kafka:29092
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #==========================================
+  # STACK DE MONITORING
+  #==========================================
+
+  #------------------------------------------
+  # Grafana
+  #------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - projet360-net
+    depends_on:
+      - influxdb
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Prometheus (métriques)
+  #------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    volumes:
+      - ./monitoring/prometheus/config.yml:/etc/prometheus/prometheus.yml
+      - prometheus-storage:/prometheus
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Loki (logs)
+  #------------------------------------------
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/config.yml:/etc/loki/loki-config.yml
+      - ./monitoring/loki/data:/loki
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Promtail (collecteur de logs)
+  #------------------------------------------
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail/config.yml:/etc/promtail/promtail-config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Node Exporter (métriques système)
+  #------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # cAdvisor (métriques conteneurs)
+  #------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #------------------------------------------
+  # Kafka Exporter (métriques Kafka)
+  #------------------------------------------
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter
+    command:
+      - '--kafka.server=kafka:29092'
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka
+    networks:
+      - projet360-net
+    restart: unless-stopped
+
+  #==========================================
+  # service script de hdfs vers postgres
+  #==========================================
+  etl_batch:
+    build:
+      context: ./etl_hdfs
+      dockerfile: Dockerfile
+    container_name: etl_batch
+    depends_on:
+      - postgres_dwh
+    volumes:
+      - ./data:/data
+      - ./etl_hdfs:/app
+    networks:
+      - projet360-net
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Pas de command ici ! Le CMD du Dockerfile sera utilisé
+    restart: on-failure  # ← Redémarre si le script échoue
+
+  #==========================================
+  # PostgreSQL Data Warehouse
+  #==========================================
+  postgres_dwh:
+    image: postgres:15-alpine
+    container_name: postgres_dwh
+    environment:
+      POSTGRES_DB: crypto_warehouse
+      POSTGRES_USER: user123
+      POSTGRES_PASSWORD: admin1234
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_scripts:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - projet360-net
+
+  #==========================================
+  # PgAdmin (Interface graphique optionnelle)
+  #==========================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@crypto.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres_dwh
+    networks:
+      - projet360-net
+
+#==========================================
+# RÉSEAUX
+#==========================================
+networks:
+  projet360-net:
+    driver: bridge
+
+#==========================================
+# VOLUMES
+#==========================================
+volumes:
+  datanode:
+  namenode:
+  grafana-storage:
+  influxdb-storage:
+  prometheus-storage:
+  loki-storage:
+  postgres_data:

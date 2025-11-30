@@ -1,0 +1,38 @@
+#  Python
+__pycache__/
+*.pyc
+*.pyo
+
+#  Docker volumes & data
+Dockerr/hdfs/
+monitoring/loki/data/
+monitoring/loki/wal/
+monitoring/prometheus/data/
+monitoring/grafana/data/
+
+#  Logs
+*.log
+
+#  Environnement virtuel
+monEnv/
+venv/
+.env
+
+#  Fichiers sensibles
+*.env
+*.key
+*.pem
+
+#  caches
+.cache/
+tmp/
+
+#  VSCode
+.vscode/
+.idea/
+
+#  Autres dossiers lourds
+*.tar
+*.gz
+*.zip
+*.dump

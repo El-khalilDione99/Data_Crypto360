@@ -1,0 +1,21 @@
+# prometheus.yml – FICHIER COMPLET À COPIER-COLLER
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Tes services Python (les 3 qui étaient en rouge)
+  - job_name: 'dataflow360-python'
+    static_configs:
+      - targets:
+          - 'binance_kafka:8000'      # port à l'intérieur du conteneur
+          - 'coingo_kafka:8000'       # même port 8000 dans Docker
+          - 'crypto_batch:8000'       # même chose
+        labels:
+          group: 'dataflow360'
+
+  # Garde tes autres jobs si tu en as déjà (node exporter, cadvisor, loki, etc.)
+  # Exemple si tu as déjà node-exporter :
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']

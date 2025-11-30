@@ -287,12 +287,12 @@ try:
                 
                 # Afficher un résumé
                 total = count_binance + count_coingecko
-                print(f"\n📊 Résumé: {total} points écrits "
+                print(f"\n Résumé: {total} points écrits "
                       f"(Binance: {count_binance}, CoinGecko: {count_coingecko}, "
                       f"Erreurs: {count_errors})\n")
         
         except Exception as e:
-            print(f"❌ Erreur traitement message : {e}")
+            print(f" Erreur traitement message : {e}")
             print(f"   Message: {message.value}")
             count_errors += 1
             health_tracker.record_error('MessageProcessingError')

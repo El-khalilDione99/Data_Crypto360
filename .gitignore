@@ -10,6 +10,26 @@ monitoring/loki/wal/
 monitoring/prometheus/data/
 monitoring/grafana/data/
 
+# Mais conserver les fichiers de configuration !
+!docker/hdfs/config/
+!docker/hdfs/config/*
+!docker/config/*
+!docker/core-site.xml/*
+!docker/hadoop-hive.env/*
+!docker/hdfs-site.xml/*
+!docker/mapred-site.xml/*
+!docker/yarn-site.xml/*
+
+!docker/hadoop/config/*
+!docker/hadoop/core-site.xml/*
+!docker/hadoop/hadoop-hive.env/*
+!docker/hadoop/hdfs-site.xml/*
+!docker/hadoop/mapred-site.xml/*
+!docker/hadoop/yarn-site.xml/*
+
+
+
+
 #  Logs
 *.log
 
